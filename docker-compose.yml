@@ -1,0 +1,18 @@
+version: '2'
+services:
+    test:
+        build: ./testdocker
+        networks:
+         - testnw1
+         - testnw2
+        labels:
+         triton.cns.services: "aggr,stat"
+         neptune.cns.services: "aggr,stat"
+        command: /bin/bash
+
+networks:
+    testnw1:
+        external: true
+    testnw2:
+        external: true
+        
