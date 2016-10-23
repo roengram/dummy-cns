@@ -1,14 +1,26 @@
 version: '2'
 services:
+    dnsmasq:
+        build: ./dnsmasq
+        cap_add:
+         - NET_ADMIN
+        networks:
+         - testnw1
+         - testnw2
+        volumes:
+         - /var/run/docker.sock:/var/run/docker.sock
+          
     test:
         build: ./testdocker
         networks:
          - testnw1
          - testnw2
         labels:
+         dc: "us-east-1a"
          triton.cns.services: "aggr,stat"
-         neptune.cns.services: "aggr,stat"
-        command: /bin/bash
+         neptune.dns: "aggr,stat"
+#        command: /bin/bash
+        command: sleep 100
 
 networks:
     testnw1:

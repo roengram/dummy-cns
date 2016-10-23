@@ -18,7 +18,7 @@ def apply_dns(dnsdb):
     # reload
     pid = os.environ.get("DNSMASQ_PID")
     if pid != None:
-        os.kill(pid, signal.SIGHUP)
+        os.kill(int(pid), signal.SIGHUP)
 
 def loop():
     docker_endpoint = os.getenv("DOCKER_ENDPOINT", "unix://var/run/docker.sock")
@@ -48,15 +48,17 @@ def loop():
                         ip = n["IPAddress"]
                         newdns.append("%s %s" %(ip, fqdn))
 
-            if labels.has_key("neptune.cns.services"):
-                services = labels["neptune.cns.services"]
+            if labels.has_key("neptune.dns"):
+                services = labels["neptune.dns"]
                 service_list = services.split(',')
                 for s in service_list: 
-                    fqdn = "%s.svc.%s" % (s, base_domain)
+                    fqdn = "%s.%s" % (s, base_domain)
                     for n in networks.values():
                         ip = n["IPAddress"]
                         newdns.append("%s %s" %(ip, fqdn))
-            dnsdb[cid] = newdns
+
+            if len(newdns) > 0:
+                dnsdb[cid] = newdns
 #            pp.pprint(dnsdb)
 
         elif evt["status"] == "die":
@@ -71,4 +73,12 @@ def loop():
         
 
 if __name__ == "__main__":
+    dnsfile = os.getenv("DNSMASQ_HOSTFILE", "/etc/dnsmasq.d/static_hosts")
+    pid = os.environ.get("DNSMASQ_PID")
+    docker_endpoint = os.getenv("DOCKER_ENDPOINT", "unix://var/run/docker.sock")
+    docker_version = os.getenv("DOCKER_VERSION", "auto")
+    print "DNSMASQ_HOSTFILE: %s" % dnsfile
+    print "DNSMASQ_PID: %s" % pid
+    print "DOCKER_ENDPOINT: %s" % docker_endpoint
+    print "DOCKER_VERSION: %s" % docker_version
     loop()
