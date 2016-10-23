@@ -3,8 +3,22 @@
 from docker import Client
 import pprint
 import os
+import signal
 
 pp = pprint.PrettyPrinter(indent=4)
+
+def apply_dns(dnsdb):
+    dnsfile = os.getenv("DNSMASQ_HOSTFILE", "/etc/dnsmasq.d/static_hosts")
+    # render
+    with open(dnsfile, "w+") as f:
+        for contdns in dnsdb.values():
+            for e in contdns:
+                f.write("%s\n" % e)
+
+    # reload
+    pid = os.environ.get("DNSMASQ_PID")
+    if pid != None:
+        os.kill(pid, signal.SIGHUP)
 
 def loop():
     docker_endpoint = os.getenv("DOCKER_ENDPOINT", "unix://var/run/docker.sock")
@@ -43,14 +57,17 @@ def loop():
                         ip = n["IPAddress"]
                         newdns.append("%s %s" %(ip, fqdn))
             dnsdb[cid] = newdns
-            pp.pprint(dnsdb)
+#            pp.pprint(dnsdb)
 
         elif evt["status"] == "die":
 #            print "died: %s" % (evt["id"])
             cid = evt["id"]
             del dnsdb[cid]
-            pp.pprint(dnsdb)
+#            pp.pprint(dnsdb)
 #            pp.pprint(detail)
+
+        # apply dns
+        apply_dns(dnsdb)
         
 
 if __name__ == "__main__":
